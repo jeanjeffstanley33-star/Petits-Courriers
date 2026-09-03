@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Petits Courriers — Juste à temps</title>
+<meta name="description" content="Petits Courriers — Livrezon koli rapid ak fyab ant Miami, Cap-Haïtien ak Port-au-Prince.">
+<meta name="theme-color" content="#0B2A3B">
+
+<!-- PWA -->
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22%230B2A3B%22/><text x=%2250%22 y=%2266%22 font-size=%2255%22 text-anchor=%22middle%22 fill=%22%23F2A93B%22 font-family=%22sans-serif%22>PC</text></svg>">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+
+<!-- Tailwind -->
+<script src="https://cdn.tailwindcss.com"></script>
+<!-- Lucide Icons -->
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js" defer></script>
+
+<!-- Fonts: Space Grotesk (display) + Inter (body) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=Baloo+2:wght@600;700;800&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --navy:#0B2A3B;
+    --teal:#114B5F;
+    --gold:#F2A93B;
+    --coral:#E8563A;
+    --sand:#FBF6EC;
+    --ink:#0B2A3B;
+    --splash-bg:#001A27; /* koulè fon egzak ki soti nan logo.jpg — anpeche kare/bwat parèt */
+  }
+  html{scroll-behavior:smooth;}
+  body{
+    font-family:'Inter',sans-serif;
+    background:var(--sand);
+    color:var(--ink);
+  }
+  .font-display{font-family:'Space Grotesk',sans-serif;}
+
+  /* dotted route line used as a structural motif, not decoration */
+  .route-line{
+    stroke-dasharray: 2 10;
+    stroke-linecap: round;
+    animation: dash 40s linear infinite;
+  }
+  @keyframes dash{
+    to{ stroke-dashoffset:-500; }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .route-line{ animation:none; }
+  }
+
+  .focus-ring:focus-visible{
+    outline:3px solid var(--gold);
+    outline-offset:2px;
+  }
+
+  .step-num{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;
+    font-size:2.75rem;
+    color:var(--gold);
+    line-height:1;
+  }
+
+  .font-logo{ font-family:'Baloo 2', 'Space Grotesk', sans-serif; }
+
+  /* ---------- Splash screen ---------- */
+  #splash{
+    position:fixed;
+    inset:0;
+    z-index:100;
+    background:var(--splash-bg);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:2.5rem;
+    transition:opacity 0.7s ease;
+  }
+  #splash.is-hidden{
+    opacity:0;
+    pointer-events:none;
+  }
+  #splash-logo{
+    animation:splash-in 0.8s ease-out;
+  }
+  @keyframes splash-in{
+    from{ opacity:0; transform:scale(0.92); }
+    to{ opacity:1; transform:scale(1); }
+  }
+  @media (prefers-reduced-motion: reduce){
+    #splash-logo{ animation:none; }
+  }
+
+  /* ---------- Login page ---------- */
+  #login-page{
+    position:fixed;
+    inset:0;
+    z-index:90;
+    background:var(--sand);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    padding:1.5rem;
+    opacity:0;
+    transition:opacity 0.6s ease;
+    overflow-y:auto;
+  }
+  #login-page.is-visible{
+    display:flex;
+    opacity:1;
+  }
+
+  /* Onglè Konekte / Enskri */
+  .auth-tab{
+    flex:1;
+    text-align:center;
+    padding:0.65rem 0;
+    border-radius:9999px;
+    font-size:0.875rem;
+    font-weight:600;
+    color:rgba(11,42,59,0.5);
+    transition:all 0.25s ease;
+    cursor:pointer;
+  }
+  .auth-tab.is-active{
+    background:var(--navy);
+    color:#fff;
+    box-shadow:0 4px 10px rgba(0,26,39,0.25);
+  }
+
+  .input-icon-group{
+    position:relative;
+  }
+  .input-icon-group .lucide-icon{
+    position:absolute;
+    left:1.1rem;
+    top:50%;
+    transform:translateY(-50%);
+    color:rgba(11,42,59,0.4);
+    pointer-events:none;
+  }
+  .input-icon-group input{
+    padding-left:2.9rem;
+  }
+
+  input[type="checkbox"].pc-checkbox{
+    width:1.05rem;
+    height:1.05rem;
+    border-radius:0.35rem;
+    border:1.5px solid rgba(11,42,59,0.3);
+    accent-color:var(--gold);
+    cursor:pointer;
+  }
+
+  #app-site{ display:none; }
+  #app-site.is-visible{ display:block; }
+</style>
+</head>
+<body class="antialiased">
+
+<!-- ===================== SPLASH SCREEN ===================== -->
+<div id="splash" role="img" aria-label="Petits Courriers — chargement">
+  <!-- Logo orijinal la (imaj), pa yon rekreyasyon SVG.
+       Fon paj #splash la konfigire ak menm koulè egzak ak fon logo.jpg la (#001A27),
+       konsa pa gen okenn kare/bwat vizib otou imaj la. -->
+  <img id="splash-logo" src="logo.jpg" alt="Petits Courriers — Juste à temps" class="w-64 max-w-[78vw] h-auto object-contain">
+</div>
+
+<!-- ===================== LOGIN PAGE (estrikti vizyèl sèlman, san lojik) — an fransè ===================== -->
+<div id="login-page">
+  <div class="w-full max-w-sm">
+
+    <!-- Header: logo + nom -->
+    <div class="flex flex-col items-center mb-7">
+      <img src="logo.jpg" alt="Petits Courriers" class="w-16 h-16 rounded-2xl object-cover shadow-md mb-3">
+      <h1 class="font-logo font-bold text-xl text-[var(--navy)]">Petits Courriers</h1>
+      <p class="text-sm text-[var(--navy)]/55 mt-1">Juste à temps</p>
+    </div>
+
+    <div class="bg-white rounded-[1.75rem] shadow-md p-6 sm:p-7">
+
+      <!-- Onglet basculatè: Se connecter / S'inscrire -->
+      <div class="flex bg-[var(--navy)]/5 rounded-full p-1 mb-6" role="tablist" aria-label="Authentification">
+        <button type="button" class="auth-tab is-active" id="tab-connexion" role="tab" aria-selected="true">
+          Se connecter
+        </button>
+        <button type="button" class="auth-tab" id="tab-inscription" role="tab" aria-selected="false">
+          S'inscrire
+        </button>
+      </div>
+
+      <form onsubmit="return false;">
+        <label class="block mb-4">
+          <span class="text-sm font-medium text-[var(--navy)]/80">Adresse e-mail</span>
+          <div class="input-icon-group mt-1.5">
+            <i data-lucide="mail" class="lucide-icon w-[18px] h-[18px]"></i>
+            <input type="email" placeholder="vous@exemple.com"
+                   class="w-full rounded-full border border-[var(--navy)]/15 py-3 pr-4 text-sm focus-ring focus:border-[var(--teal)] outline-none"
+                   autocomplete="username">
+          </div>
+        </label>
+
+        <label class="block mb-3">
+          <span class="text-sm font-medium text-[var(--navy)]/80">Mot de passe</span>
+          <div class="input-icon-group mt-1.5">
+            <i data-lucide="lock" class="lucide-icon w-[18px] h-[18px]"></i>
+            <input type="password" placeholder="••••••••"
+                   class="w-full rounded-full border border-[var(--navy)]/15 py-3 pr-4 text-sm focus-ring focus:border-[var(--teal)] outline-none"
+                   autocomplete="current-password">
+          </div>
+        </label>
+
+        <!-- Nom complet — vizib sèlman nan mòd "S'inscrire" -->
+        <label class="hidden mb-3" id="field-fullname">
+          <span class="text-sm font-medium text-[var(--navy)]/80">Nom complet</span>
+          <div class="input-icon-group mt-1.5">
+            <i data-lucide="user" class="lucide-icon w-[18px] h-[18px]"></i>
+            <input type="text" placeholder="Jean Baptiste"
+                   class="w-full rounded-full border border-[var(--navy)]/15 py-3 pr-4 text-sm focus-ring focus:border-[var(--teal)] outline-none"
+                   autocomplete="name">
+          </div>
+        </label>
+
+        <div class="flex items-center justify-between mb-6 mt-2">
+          <label class="flex items-center gap-2 text-sm text-[var(--navy)]/75 cursor-pointer">
+            <input type="checkbox" class="pc-checkbox">
+            Se souvenir de moi
+          </label>
+          <a href="#" class="text-xs font-medium text-[var(--teal)] hover:underline focus-ring rounded">Mot de passe oublié ?</a>
+        </div>
+
+        <button type="submit" id="auth-submit"
+                class="w-full inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-full bg-[var(--coral)] text-white font-semibold text-sm hover:brightness-105 transition-all shadow-md focus-ring">
+          Se connecter
+        </button>
+
+        <div class="flex items-center gap-3 my-6">
+          <span class="h-px flex-1 bg-[var(--navy)]/10"></span>
+          <span class="text-xs text-[var(--navy)]/40">ou</span>
+          <span class="h-px flex-1 bg-[var(--navy)]/10"></span>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <button type="button"
+                  class="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-full border border-[var(--navy)]/15 font-medium text-sm hover:bg-[var(--navy)]/5 transition-colors shadow-sm focus-ring">
+            <!-- Logo Google officiel (multicolore) -->
+            <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
+              <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.6 32.9 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 8 3l5.7-5.7C34.6 6.1 29.6 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.7-.4-3.5z"/>
+              <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.6 15.9 18.9 13 24 13c3.1 0 5.8 1.1 8 3l5.7-5.7C34.6 6.1 29.6 4 24 4c-7.7 0-14.3 4.4-17.7 10.7z"/>
+              <path fill="#4CAF50" d="M24 44c5.5 0 10.4-1.9 14.3-5.1l-6.6-5.6C29.7 35 26.9 36 24 36c-5.2 0-9.6-3.1-11.3-7.6l-6.6 5.1C9.6 39.5 16.3 44 24 44z"/>
+              <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.9 2.5-2.6 4.6-4.8 6l6.6 5.6C40.9 37 44 31 44 24c0-1.3-.1-2.7-.4-3.5z"/>
+            </svg>
+            Google
+          </button>
+          <button type="button"
+                  class="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-full border border-[var(--navy)]/15 font-medium text-sm hover:bg-[var(--navy)]/5 transition-colors shadow-sm focus-ring">
+            <!-- Logo Apple officiel -->
+            <svg width="16" height="16" viewBox="0 0 384 512" fill="currentColor" aria-hidden="true">
+              <path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z"/>
+            </svg>
+            Apple
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <p class="text-center text-sm text-[var(--navy)]/60 mt-6" id="auth-switch-hint">
+      Pas encore de compte ? <a href="#" class="font-semibold text-[var(--teal)] hover:underline focus-ring rounded" id="switch-to-signup">Créer un compte</a>
+    </p>
+  </div>
+</div>
+
+<!-- ===================== SIT LA (landing page, parèt apre login pi devan) ===================== -->
+<div id="app-site">
+
+<!-- ===================== HEADER ===================== -->
+<header class="sticky top-0 z-50 bg-[var(--sand)]/90 backdrop-blur border-b border-[var(--navy)]/10">
+  <div class="max-w-6xl mx-auto px-5 md:px-8 h-16 flex items-center justify-between">
+    <a href="#top" class="flex items-center gap-2 focus-ring rounded">
+      <span class="w-9 h-9 rounded-lg bg-[var(--navy)] flex items-center justify-center">
+        <span class="font-display font-bold text-[var(--gold)] text-sm">PC</span>
+      </span>
+      <span class="font-display font-semibold text-lg tracking-tight">Petits Courriers</span>
+    </a>
+
+    <nav class="hidden md:flex items-center gap-8 text-sm font-medium text-[var(--navy)]/80">
+      <a href="#services" class="hover:text-[var(--navy)] focus-ring rounded">Sèvis</a>
+      <a href="#kijan" class="hover:text-[var(--navy)] focus-ring rounded">Kijan sa mache</a>
+      <a href="#zon" class="hover:text-[var(--navy)] focus-ring rounded">Zon nou kouvri</a>
+      <a href="#kontak" class="hover:text-[var(--navy)] focus-ring rounded">Kontak</a>
+    </nav>
+
+    <div class="flex items-center gap-3">
+      <button class="hidden sm:inline-flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-full border border-[var(--navy)]/20 hover:border-[var(--navy)]/50 transition-colors focus-ring">
+        Konekte
+      </button>
+      <button class="inline-flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-full bg-[var(--navy)] text-white hover:bg-[var(--teal)] transition-colors focus-ring">
+        Voye yon koli
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- ===================== HERO ===================== -->
+<section id="top" class="relative overflow-hidden">
+  <div class="max-w-6xl mx-auto px-5 md:px-8 pt-16 pb-20 md:pt-24 md:pb-28 grid md:grid-cols-2 gap-12 items-center">
+
+    <div>
+      <p class="text-sm font-semibold text-[var(--coral)] mb-4">Miami · Cap-Haïtien · Port-au-Prince</p>
+      <h1 class="font-display font-bold text-[2.75rem] leading-[1.05] md:text-6xl md:leading-[1.02] tracking-tight text-[var(--navy)]">
+        Koli w yo rive
+        <span class="block text-[var(--teal)]">juste à temps.</span>
+      </h1>
+      <p class="mt-6 text-lg text-[var(--navy)]/75 max-w-md leading-relaxed">
+        Petits Courriers konekte fanmi ak biznis ant Etazini ak Ayiti ak yon sèvis livrezon ki senp, rapid, e w ka swiv de A a Z.
+      </p>
+
+      <div class="mt-9 flex flex-wrap gap-4">
+        <button class="inline-flex items-center gap-2 px-6 py-3.5 rounded-full bg-[var(--coral)] text-white font-semibold hover:brightness-105 transition-all focus-ring">
+          Kòmanse yon anvwa
+          <i data-lucide="arrow-up-right" class="w-4 h-4"></i>
+        </button>
+        <button class="inline-flex items-center gap-2 px-6 py-3.5 rounded-full border border-[var(--navy)]/25 font-semibold hover:bg-[var(--navy)]/5 transition-colors focus-ring">
+          Swiv yon koli
+        </button>
+      </div>
+
+      <dl class="mt-12 grid grid-cols-3 gap-6 max-w-sm">
+        <div>
+          <dt class="sr-only">Vil kouvri</dt>
+          <dd class="font-display font-bold text-2xl text-[var(--navy)]">3</dd>
+          <dd class="text-xs text-[var(--navy)]/60 mt-0.5">vil kouvri</dd>
+        </div>
+        <div>
+          <dt class="sr-only">Depo</dt>
+          <dd class="font-display font-bold text-2xl text-[var(--navy)]">2</dd>
+          <dd class="text-xs text-[var(--navy)]/60 mt-0.5">peyi konekte</dd>
+        </div>
+        <div>
+          <dt class="sr-only">Swivi</dt>
+          <dd class="font-display font-bold text-2xl text-[var(--navy)]">24/7</dd>
+          <dd class="text-xs text-[var(--navy)]/60 mt-0.5">swivi koli</dd>
+        </div>
+      </dl>
+    </div>
+
+    <!-- Route illustration: the hero device, grounded in the actual shipping lanes -->
+    <div class="relative">
+      <svg viewBox="0 0 420 460" class="w-full h-auto" role="img" aria-label="Chemen livrezon ant Miami, Cap-Haïtien, ak Port-au-Prince">
+        <rect x="0" y="0" width="420" height="460" rx="28" fill="#0B2A3B"/>
+
+        <!-- route line -->
+        <path d="M 90 90 C 170 160, 150 250, 230 300 S 300 380, 330 400"
+              fill="none" stroke="#F2A93B" stroke-width="2.5" class="route-line"/>
+
+        <!-- Miami node -->
+        <circle cx="90" cy="90" r="7" fill="#E8563A"/>
+        <circle cx="90" cy="90" r="14" fill="none" stroke="#E8563A" stroke-width="1.5" opacity="0.5"/>
+        <text x="112" y="95" fill="#FBF6EC" font-family="Space Grotesk, sans-serif" font-size="15" font-weight="600">Miami</text>
+
+        <!-- Cap-Haïtien node -->
+        <circle cx="230" cy="300" r="7" fill="#F2A93B"/>
+        <circle cx="230" cy="300" r="14" fill="none" stroke="#F2A93B" stroke-width="1.5" opacity="0.5"/>
+        <text x="252" y="305" fill="#FBF6EC" font-family="Space Grotesk, sans-serif" font-size="15" font-weight="600">Cap-Haïtien</text>
+
+        <!-- Port-au-Prince node -->
+        <circle cx="330" cy="400" r="7" fill="#F2A93B"/>
+        <circle cx="330" cy="400" r="14" fill="none" stroke="#F2A93B" stroke-width="1.5" opacity="0.5"/>
+        <text x="270" y="428" fill="#FBF6EC" font-family="Space Grotesk, sans-serif" font-size="15" font-weight="600">Port-au-Prince</text>
+
+        <!-- small package glyphs along the route -->
+        <g transform="translate(150,150)" opacity="0.9">
+          <rect x="0" y="0" width="16" height="16" rx="3" fill="#FBF6EC"/>
+          <path d="M0 5 L8 9 L16 5" stroke="#0B2A3B" stroke-width="1.2" fill="none"/>
+        </g>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== SERVICES ===================== -->
+<section id="services" class="bg-white border-y border-[var(--navy)]/10">
+  <div class="max-w-6xl mx-auto px-5 md:px-8 py-20">
+    <h2 class="font-display font-bold text-3xl md:text-4xl text-[var(--navy)] max-w-lg">
+      Sa nou fè pou ou
+    </h2>
+
+    <div class="mt-12 grid md:grid-cols-3 gap-8">
+      <div class="p-7 rounded-2xl bg-[var(--sand)]">
+        <div class="w-11 h-11 rounded-xl bg-[var(--navy)] flex items-center justify-center mb-5">
+          <i data-lucide="package" class="w-5 h-5 text-[var(--gold)]"></i>
+        </div>
+        <h3 class="font-display font-semibold text-lg text-[var(--navy)]">Anvwa koli</h3>
+        <p class="mt-2 text-sm text-[var(--navy)]/70 leading-relaxed">
+          Voye pake pèsonèl oswa komèsyal ant Miami ak Ayiti, ak yon tan livrezon ou ka konte sou li.
+        </p>
+      </div>
+
+      <div class="p-7 rounded-2xl bg-[var(--sand)]">
+        <div class="w-11 h-11 rounded-xl bg-[var(--navy)] flex items-center justify-center mb-5">
+          <i data-lucide="map-pin" class="w-5 h-5 text-[var(--gold)]"></i>
+        </div>
+        <h3 class="font-display font-semibold text-lg text-[var(--navy)]">Swivi an tan reyèl</h3>
+        <p class="mt-2 text-sm text-[var(--navy)]/70 leading-relaxed">
+          Suiv chemen koli w lan etap pa etap, depi li kite depo a jiskaske li rive nan men w.
+        </p>
+      </div>
+
+      <div class="p-7 rounded-2xl bg-[var(--sand)]">
+        <div class="w-11 h-11 rounded-xl bg-[var(--navy)] flex items-center justify-center mb-5">
+          <i data-lucide="shield-check" class="w-5 h-5 text-[var(--gold)]"></i>
+        </div>
+        <h3 class="font-display font-semibold text-lg text-[var(--navy)]">Sekirite ak konfyans</h3>
+        <p class="mt-2 text-sm text-[var(--navy)]/70 leading-relaxed">
+          Chak koli anrejistre ak verifye pou li rive an sekirite, san sipriz.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== KIJAN SA MACHE (real sequence → numbered steps) ===================== -->
+<section id="kijan" class="max-w-6xl mx-auto px-5 md:px-8 py-20">
+  <h2 class="font-display font-bold text-3xl md:text-4xl text-[var(--navy)] max-w-lg">
+    Kijan sa mache
+  </h2>
+
+  <div class="mt-12 grid md:grid-cols-3 gap-10">
+    <div>
+      <span class="step-num">01</span>
+      <h3 class="font-display font-semibold text-lg text-[var(--navy)] mt-3">Depoze koli a</h3>
+      <p class="mt-2 text-sm text-[var(--navy)]/70 leading-relaxed">
+        Pote koli w lan nan yon depo Petits Courriers Miami, oswa mande yon ranmasaj.
+      </p>
+    </div>
+    <div>
+      <span class="step-num">02</span>
+      <h3 class="font-display font-semibold text-lg text-[var(--navy)] mt-3">Nou transpòte l</h3>
+      <p class="mt-2 text-sm text-[var(--navy)]/70 leading-relaxed">
+        Koli a vwayaje sou chemen Miami → Cap-Haïtien → Port-au-Prince, ak swivi chak etap.
+      </p>
+    </div>
+    <div>
+      <span class="step-num">03</span>
+      <h3 class="font-display font-semibold text-lg text-[var(--navy)] mt-3">Livrezon</h3>
+      <p class="mt-2 text-sm text-[var(--navy)]/70 leading-relaxed">
+        Destinatè a resevwa yon notifikasyon epi al chèche koli a, oswa nou livre l dirèkteman.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== ZON NOU KOUVRI ===================== -->
+<section id="zon" class="bg-[var(--navy)] text-[var(--sand)]">
+  <div class="max-w-6xl mx-auto px-5 md:px-8 py-20">
+    <h2 class="font-display font-bold text-3xl md:text-4xl max-w-lg">
+      Zon nou kouvri
+    </h2>
+    <div class="mt-12 grid sm:grid-cols-3 gap-6">
+      <div class="p-6 rounded-2xl bg-white/5 border border-white/10">
+        <p class="text-xs font-semibold text-[var(--gold)] uppercase tracking-wide">Depo prensipal</p>
+        <p class="font-display font-semibold text-xl mt-2">Miami, FL</p>
+      </div>
+      <div class="p-6 rounded-2xl bg-white/5 border border-white/10">
+        <p class="text-xs font-semibold text-[var(--gold)] uppercase tracking-wide">Kote nou livre</p>
+        <p class="font-display font-semibold text-xl mt-2">Cap-Haïtien</p>
+      </div>
+      <div class="p-6 rounded-2xl bg-white/5 border border-white/10">
+        <p class="text-xs font-semibold text-[var(--gold)] uppercase tracking-wide">Kote nou livre</p>
+        <p class="font-display font-semibold text-xl mt-2">Port-au-Prince</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== KONTAK / CTA ===================== -->
+<section id="kontak" class="max-w-6xl mx-auto px-5 md:px-8 py-20">
+  <div class="rounded-3xl bg-[var(--gold)]/15 border border-[var(--gold)]/30 p-10 md:p-14 flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
+    <div>
+      <h2 class="font-display font-bold text-2xl md:text-3xl text-[var(--navy)]">
+        Pare pou voye premye koli w la?
+      </h2>
+      <p class="mt-2 text-[var(--navy)]/70 max-w-md">
+        Kreye yon kont gratis epi kòmanse voye koli ant Miami ak Ayiti jodi a.
+      </p>
+    </div>
+    <button class="shrink-0 inline-flex items-center gap-2 px-7 py-3.5 rounded-full bg-[var(--navy)] text-white font-semibold hover:bg-[var(--teal)] transition-colors focus-ring">
+      Kreye yon kont
+      <i data-lucide="arrow-up-right" class="w-4 h-4"></i>
+    </button>
+  </div>
+</section>
+
+<!-- ===================== FOOTER ===================== -->
+<footer class="border-t border-[var(--navy)]/10">
+  <div class="max-w-6xl mx-auto px-5 md:px-8 py-12 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+    <div class="flex items-center gap-2">
+      <span class="w-8 h-8 rounded-lg bg-[var(--navy)] flex items-center justify-center">
+        <span class="font-display font-bold text-[var(--gold)] text-xs">PC</span>
+      </span>
+      <span class="font-display font-semibold text-[var(--navy)]">Petits Courriers</span>
+    </div>
+    <p class="text-sm text-[var(--navy)]/60">© 2026 Petits Courriers. Tout dwa rezève.</p>
+    <div class="flex gap-5 text-sm text-[var(--navy)]/60">
+      <a href="#" class="hover:text-[var(--navy)] focus-ring rounded">Kondisyon</a>
+      <a href="#" class="hover:text-[var(--navy)] focus-ring rounded">Konfidansyalite</a>
+    </div>
+  </div>
+</footer>
+
+</div><!-- /#app-site -->
+
+<script>
+  // ---------- Lucide Icons (chaje ak sekirite, pa kraze rès script la si CDN echwe) ----------
+  document.addEventListener('DOMContentLoaded', function(){
+    if (window.lucide && typeof window.lucide.createIcons === 'function') {
+      window.lucide.createIcons();
+    }
+  });
+
+  // ---------- Splash Screen -> Login transition ----------
+  // Dire total ekran chajman an: 3.2s, apre sa fade-out epi paj Login la parèt.
+  var SPLASH_DURATION_MS = 3200;
+
+  function goToLogin(){
+    var splash = document.getElementById('splash');
+    var loginPage = document.getElementById('login-page');
+    if (!splash || !loginPage) return;
+
+    splash.classList.add('is-hidden');
+    loginPage.classList.add('is-visible');
+
+    var hideSplash = function(){
+      splash.style.display = 'none';
+      splash.removeEventListener('transitionend', hideSplash);
+    };
+    splash.addEventListener('transitionend', hideSplash);
+    // filè sekirite: si evènman transitionend pa deklanche pou yon rezon,
+    // kache splash la kanmenm apre 900ms (dire tranzisyon an se 700ms).
+    setTimeout(hideSplash, 900);
+  }
+
+  window.addEventListener('DOMContentLoaded', function(){
+    setTimeout(goToLogin, SPLASH_DURATION_MS);
+  });
+
+  // ---------- Onglet Se connecter / S'inscrire (vizyèl sèlman, san lojik backend) ----------
+  document.addEventListener('DOMContentLoaded', function(){
+    var tabConnexion = document.getElementById('tab-connexion');
+    var tabInscription = document.getElementById('tab-inscription');
+    var fieldFullname = document.getElementById('field-fullname');
+    var authSubmit = document.getElementById('auth-submit');
+    var switchHint = document.getElementById('auth-switch-hint');
+
+    function setMode(mode){
+      var isSignup = mode === 'inscription';
+
+      tabConnexion.classList.toggle('is-active', !isSignup);
+      tabConnexion.setAttribute('aria-selected', String(!isSignup));
+      tabInscription.classList.toggle('is-active', isSignup);
+      tabInscription.setAttribute('aria-selected', String(isSignup));
+
+      fieldFullname.classList.toggle('hidden', !isSignup);
+      authSubmit.textContent = isSignup ? "S'inscrire" : 'Se connecter';
+
+      switchHint.innerHTML = isSignup
+        ? 'Vous avez déjà un compte ? <a href="#" class="font-semibold text-[var(--teal)] hover:underline focus-ring rounded" id="switch-to-signup">Se connecter</a>'
+        : 'Pas encore de compte ? <a href="#" class="font-semibold text-[var(--teal)] hover:underline focus-ring rounded" id="switch-to-signup">Créer un compte</a>';
+
+      var switchLink = document.getElementById('switch-to-signup');
+      if (switchLink){
+        switchLink.addEventListener('click', function(e){
+          e.preventDefault();
+          setMode(isSignup ? 'connexion' : 'inscription');
+        });
+      }
+    }
+
+    if (tabConnexion && tabInscription){
+      tabConnexion.addEventListener('click', function(){ setMode('connexion'); });
+      tabInscription.addEventListener('click', function(){ setMode('inscription'); });
+      setMode('connexion');
+    }
+  });
+</script>
+</body>
+</html>
